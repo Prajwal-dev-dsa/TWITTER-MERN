@@ -5,6 +5,7 @@ import connectMongoDB from "./db/connectMongoDB.js";
 import authRoutes from "./routes/auth.route.js";
 import cookieParser from "cookie-parser";
 import userRoutes from "./routes/user.route.js";
+import postRoutes from "./routes/post.route.js";
 
 dotenv.config(); //help to load the environment variables from the .env file
 
@@ -24,7 +25,8 @@ app.use(express.urlencoded({ extended: true })); //to parse the form data, helps
 app.use(cookieParser()); //to parse the cookie, helps to access the cookie
 
 app.use("/api/auth", authRoutes); //authRoutes
-app.use("/api/user", userRoutes); //userRoutes
+app.use("/api/users", userRoutes); //userRoutes
+app.use("/api/posts", postRoutes); //postRoutes
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
