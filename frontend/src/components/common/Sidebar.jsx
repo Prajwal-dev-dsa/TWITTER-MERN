@@ -3,15 +3,43 @@ import XSvg from "../svgs/X";
 import { MdHomeFilled } from "react-icons/md";
 import { IoNotifications } from "react-icons/io5";
 import { FaUser } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BiLogOut } from "react-icons/bi";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 const Sidebar = () => {
-  const data = {
-    fullName: "John Doe",
-    username: "johndoe",
-    profileImg: "/avatars/boy1.png",
-  };
+  const queryClient = useQueryClient(); //queryClient to invalidate the authUser query
+  const navigate = useNavigate(); //navigate to the login page
+
+  //below function is used to logout the user, it is a mutation function, it is a global state management for this project, it will help us to manage the state of the logout process from the backend to the frontend.
+  const { mutate: logout } = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/auth/logout", {
+        //hit the logout endpoint in backend
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Logout failed"); //if the response is not ok, then throw an error
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(["authUser"], null); //set the authUser query to null
+      queryClient.invalidateQueries(["authUser"]); //invalidate the authUser query
+      toast.success("Logged out successfully"); //show a success message
+      navigate("/login"); //navigate to the login page
+    },
+  });
+
+  const { data } = useQuery({
+    queryKey: ["authUser"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/me", { credentials: "include" }); //hit the me endpoint in backend
+      const data = await res.json(); //get the response from the backend
+      if (!res.ok) return null; //if the response is not ok, then return null
+      return data;
+    },
+    retry: false, //don't retry if the query fails
+  });
 
   return (
     <div className="md:flex-[2_2_0] w-18 max-w-52">
@@ -66,7 +94,13 @@ const Sidebar = () => {
                 </p>
                 <p className="text-slate-500 text-sm">@{data?.username}</p>
               </div>
-              <BiLogOut className="w-5 h-5 cursor-pointer" />
+              <BiLogOut
+                className="w-5 h-5 cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  logout();
+                }}
+              />
             </div>
           </Link>
         )}
