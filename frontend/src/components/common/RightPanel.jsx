@@ -1,8 +1,12 @@
 import { Link } from "react-router-dom";
-import RightPanelSkeleton from "../skeletons/RightPanelSkeleton";
 import { useQuery } from "@tanstack/react-query";
+import RightPanelSkeleton from "../skeletons/RightPanelSkeleton";
+import useFollow from "../../hooks/useFollow";
+import LoadingSpinner from "./LoadingSpinner";
 
 const RightPanel = () => {
+  const { followUnfollowUser, isFollowingUser } = useFollow(); //using the useFollow hook to handle the follow/unfollow functionality for suggested users
+
   //below is the query to fetch the suggested users
   const { data: suggestedUsers, isLoading: isLoadingSuggestedUsers } = useQuery(
     {
@@ -69,9 +73,16 @@ const RightPanel = () => {
                 <div>
                   <button
                     className="btn bg-white text-black hover:bg-white hover:opacity-90 rounded-full btn-sm"
-                    onClick={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      followUnfollowUser(user._id); //calling the followUnfollowUser mutation function to follow/unfollow the user and update the UI
+                    }}
                   >
-                    Follow
+                    {isFollowingUser ? (
+                      <LoadingSpinner size="sm" />
+                    ) : (
+                      <span>Follow</span>
+                    )}
                   </button>
                 </div>
               </Link>
