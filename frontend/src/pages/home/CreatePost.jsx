@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { IoCloseSharp } from "react-icons/io5";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 const CreatePost = () => {
   const [text, setText] = useState(""); //state to store the text of the post
@@ -44,6 +45,9 @@ const CreatePost = () => {
     onSuccess: () => {
       toast.success("Post created successfully");
       queryClient.invalidateQueries({ queryKey: ["posts"] }); //invalidating the posts query to refetch the posts
+    },
+    onError: (error) => {
+      toast.error(error.message);
     },
   });
 
@@ -113,7 +117,7 @@ const CreatePost = () => {
             onChange={handleImgChange}
           />
           <button className="btn btn-primary rounded-full btn-sm text-white px-4">
-            {isCreatingPost ? "Posting..." : "Post"}
+            {isCreatingPost ? <LoadingSpinner size="sm" /> : "Post"}
           </button>
         </div>
         {isError && <div className="text-red-500">{error.message}</div>}

@@ -38,8 +38,44 @@ const Post = ({ post }) => {
       queryClient.invalidateQueries({ queryKey: ["posts"] }); //invalidating the posts query to refetch the posts
     },
   });
+
+  const [localLikes, setLocalLikes] = useState(post.likes || []); //we're using this to update the UI without refetching the posts
+  const isLiked = localLikes.includes(authUser?._id); //we're using this to check if the post is liked by the current user
+
+  //below is the mutation function to like/unlike a post, it will hit the backend and like/unlike the post in the database
+  const { mutate: likePost, isPending: isLikingPost } = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/posts/like/${post._id}`, {
+        //actual link to the backend route
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json(); //getting the response from the backend
+      if (!res.ok) throw new Error(data.error || "Failed to like/unlike post");
+      return data;
+    },
+    onSuccess: (updatedLikes) => {
+      //below code is commented because this is not the best UX. As it will refetch all posts and the UI will look weird.
+      //its just for the sake of testing.
+      // queryClient.invalidateQueries({ queryKey: ["posts"] }); //invalidating the posts query to refetch the posts
+
+      //instead we're using the below code to update the UI without refetching the posts
+      //we will update the cache directly for the post that is liked/unliked
+
+      setLocalLikes(updatedLikes); //updating the local likes state to update the UI without refetching the posts
+      queryClient.setQueryData(["posts"], (oldData) => {
+        return oldData.map((p) =>
+          //updating the cache directly for the post that is liked/unliked by checking the post id and updating the likes array of the post with the new likes array that we got from the backend
+          p._id === post._id ? { ...p, likes: updatedLikes } : p
+        );
+      });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const postOwner = post.user;
-  const isLiked = false;
 
   const isMyPost = authUser?._id === post.user._id; //checking if the current user is the owner of the post
 
@@ -58,7 +94,11 @@ const Post = ({ post }) => {
     e.preventDefault();
   };
 
-  const handleLikePost = () => {};
+  //handleLikePost function to like/unlike a post
+  const handleLikePost = () => {
+    if (isLikingPost) return; //if post is already getting liked we will return, otherwise we will call the likePost mutation function again to like/unlike the post.
+    likePost();
+  };
 
   return (
     <>
@@ -170,11 +210,7 @@ const Post = ({ post }) => {
                       onChange={(e) => setComment(e.target.value)}
                     />
                     <button className="btn btn-primary rounded-full btn-sm text-white px-4">
-                      {isCommenting ? (
-                        <span className="loading loading-spinner loading-md"></span>
-                      ) : (
-                        "Post"
-                      )}
+                      {isCommenting ? <LoadingSpinner size="md" /> : "Post"}
                     </button>
                   </form>
                 </div>
@@ -192,19 +228,20 @@ const Post = ({ post }) => {
                 className="flex gap-1 items-center group cursor-pointer"
                 onClick={handleLikePost}
               >
-                {!isLiked && (
+                {isLikingPost && <LoadingSpinner size="sm" />}
+                {!isLikingPost && !isLiked && (
                   <FaRegHeart className="w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
                 )}
-                {isLiked && (
+                {!isLikingPost && isLiked && (
                   <FaRegHeart className="w-4 h-4 cursor-pointer text-pink-500 " />
                 )}
 
                 <span
-                  className={`text-sm text-slate-500 group-hover:text-pink-500 ${
-                    isLiked ? "text-pink-500" : ""
+                  className={`text-sm group-hover:text-pink-500 ${
+                    isLiked ? "text-pink-500" : "text-slate-500"
                   }`}
                 >
-                  {post.likes.length}
+                  {post.likes?.length}
                 </span>
               </div>
             </div>
