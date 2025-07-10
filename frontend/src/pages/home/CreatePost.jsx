@@ -2,23 +2,58 @@ import { CiImageOn } from "react-icons/ci";
 import { BsEmojiSmileFill } from "react-icons/bs";
 import { useRef, useState } from "react";
 import { IoCloseSharp } from "react-icons/io5";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 
 const CreatePost = () => {
-  const [text, setText] = useState("");
-  const [img, setImg] = useState(null);
-
+  const [text, setText] = useState(""); //state to store the text of the post
+  const [img, setImg] = useState(null); //state to store the image of the post
   const imgRef = useRef(null);
 
-  const isPending = false;
-  const isError = false;
+  const { data: authUser } = useQuery({ queryKey: ["authUser"] }); //we're using this to get the current user who is logged in
+  const queryClient = useQueryClient(); //we're using this to invalidate the posts query to refetch the posts
 
-  const data = {
-    profileImg: "/avatars/boy1.png",
-  };
+  //below is the mutation function to create the post, it will hit the backend and create the post in the database
+  const {
+    mutate: createPost,
+    isPending: isCreatingPost,
+    isError,
+    error,
+  } = useMutation({
+    mutationFn: async ({ text, img }) => {
+      try {
+        const res = await fetch("/api/posts/create", {
+          //actual link to the backend route
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text, img }),
+        });
+        const data = await res.json(); //getting the response from the backend
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to create post");
+        }
+        return data;
+      } catch (error) {
+        console.log(error);
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Post created successfully");
+      queryClient.invalidateQueries({ queryKey: ["posts"] }); //invalidating the posts query to refetch the posts
+    },
+  });
 
+  //below is the function to handle the submission of the post
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Post created successfully");
+    //resetting the text and image states for better user experience
+    setText("");
+    setImg(null);
+    createPost({ text, img }); //calling the createPost mutation function to create the post in the database
   };
 
   const handleImgChange = (e) => {
@@ -36,7 +71,7 @@ const CreatePost = () => {
     <div className="flex p-4 items-start gap-4 border-b border-gray-700">
       <div className="avatar">
         <div className="w-8 rounded-full">
-          <img src={data.profileImg || "/avatar-placeholder.png"} />
+          <img src={authUser?.profileImg || "/avatar-placeholder.png"} />
         </div>
       </div>
       <form className="flex flex-col gap-2 w-full" onSubmit={handleSubmit}>
@@ -78,10 +113,10 @@ const CreatePost = () => {
             onChange={handleImgChange}
           />
           <button className="btn btn-primary rounded-full btn-sm text-white px-4">
-            {isPending ? "Posting..." : "Post"}
+            {isCreatingPost ? "Posting..." : "Post"}
           </button>
         </div>
-        {isError && <div className="text-red-500">Something went wrong</div>}
+        {isError && <div className="text-red-500">{error.message}</div>}
       </form>
     </div>
   );
