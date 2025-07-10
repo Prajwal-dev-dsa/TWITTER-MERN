@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import LoadingSpinner from "./LoadingSpinner";
+import { formatPostDate } from "../../utils/date";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
@@ -75,13 +76,41 @@ const Post = ({ post }) => {
     },
   });
 
+  //below is the mutation function to comment on a post, it will hit the backend and comment on the post in the database
+  const { mutate: commentOnPost, isPending: isCommenting } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/posts/comment/${post._id}`, {
+          //actual link to the backend route
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ text: comment }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to comment on post");
+        return data;
+      } catch (error) {
+        console.log(error);
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Commented on post");
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const postOwner = post.user;
 
   const isMyPost = authUser?._id === post.user._id; //checking if the current user is the owner of the post
 
-  const formattedDate = "1h";
-
-  const isCommenting = false;
+  const formattedDate = formatPostDate(post.createdAt); //formatting the date of the post
 
   //delete post function to delete the post
   const handleDeletePost = () => {
@@ -90,8 +119,11 @@ const Post = ({ post }) => {
     }
   };
 
+  //comment on post function to comment on a post
   const handlePostComment = (e) => {
     e.preventDefault();
+    if (isCommenting) return;
+    commentOnPost();
   };
 
   //handleLikePost function to like/unlike a post
