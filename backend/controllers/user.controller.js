@@ -72,13 +72,20 @@ export const getSuggestedUsers = async (req, res) => {
   try {
     const currentUser = await User.findById(req.user._id); //getting current user from the request. _id is the id of the current user. This is the current user who is logged in and going to get the suggested users to follow.
 
-    const users = await User.find({ _id: { $ne: currentUser._id } }); //getting all users except the current user. As we cannot show ourself as a suggested users.
+    const users = await User.aggregate([
+      {
+        $match: {
+          _id: { $ne: currentUser._id },
+        },
+      },
+      { $sample: { size: 10 } }, //randomly selecting 10 users
+    ]); //getting all users except the current user. As we cannot show ourself as a suggested users.
 
     const filteredUsers = users.filter((user) => {
       return !currentUser.following.includes(user._id); //filtering the users who are not in the following of the current user.
     });
 
-    const suggestedUsers = filteredUsers.slice(0, 5); //taking only 5 users as suggested users
+    const suggestedUsers = filteredUsers.slice(0, 3); //taking only 3 users as suggested users
 
     //set the password to null for the suggested users. This will not happen in the database. It will only happen in the response.
     suggestedUsers.forEach((user) => {

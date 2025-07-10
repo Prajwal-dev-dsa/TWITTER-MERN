@@ -1,9 +1,35 @@
 import { Link } from "react-router-dom";
 import RightPanelSkeleton from "../skeletons/RightPanelSkeleton";
-import { USERS_FOR_RIGHT_PANEL } from "../../utils/db/dummy";
+import { useQuery } from "@tanstack/react-query";
 
 const RightPanel = () => {
-  const isLoading = false;
+  //below is the query to fetch the suggested users
+  const { data: suggestedUsers, isLoading: isLoadingSuggestedUsers } = useQuery(
+    {
+      queryKey: ["suggestedUsers"],
+      queryFn: async () => {
+        try {
+          const res = await fetch("/api/users/suggested", {
+            //actual link to the backend route
+            credentials: "include",
+          });
+          const data = await res.json(); //getting the response from the backend
+          if (!res.ok) {
+            throw new Error(data.error || "Failed to fetch suggested users");
+          }
+          return data;
+        } catch (error) {
+          console.log(error);
+          throw new Error(error.message);
+        }
+      },
+    }
+  );
+
+  //if there are no suggested users, we're returning an empty div so that UI doesn't look weird
+  if (suggestedUsers?.length === 0) {
+    return <div className="md:w-64 w-0"></div>;
+  }
 
   return (
     <div className="hidden lg:block my-4 mx-2">
@@ -11,16 +37,15 @@ const RightPanel = () => {
         <p className="font-bold">Who to follow</p>
         <div className="flex flex-col gap-4">
           {/* item */}
-          {isLoading && (
+          {isLoadingSuggestedUsers && (
             <>
-              <RightPanelSkeleton />
               <RightPanelSkeleton />
               <RightPanelSkeleton />
               <RightPanelSkeleton />
             </>
           )}
-          {!isLoading &&
-            USERS_FOR_RIGHT_PANEL?.map((user) => (
+          {!isLoadingSuggestedUsers &&
+            suggestedUsers?.map((user) => (
               <Link
                 to={`/profile/${user.username}`}
                 className="flex items-center justify-between gap-4"
