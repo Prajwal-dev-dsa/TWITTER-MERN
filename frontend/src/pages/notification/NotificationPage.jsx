@@ -1,36 +1,61 @@
 import { Link } from "react-router-dom";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
-
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { IoSettingsOutline } from "react-icons/io5";
 import { FaUser } from "react-icons/fa";
 import { FaHeart } from "react-icons/fa6";
+import { toast } from "react-hot-toast";
 
+//below is the notification page component, it will fetch the notifications from the backend and display them in the UI
 const NotificationPage = () => {
-  const isLoading = false;
-  const notifications = [
-    {
-      _id: "1",
-      from: {
-        _id: "1",
-        username: "johndoe",
-        profileImg: "/avatars/boy2.png",
-      },
-      type: "follow",
-    },
-    {
-      _id: "2",
-      from: {
-        _id: "2",
-        username: "janedoe",
-        profileImg: "/avatars/girl1.png",
-      },
-      type: "like",
-    },
-  ];
+  const queryClient = useQueryClient(); //query client to invalidate the notifications query
 
-  const deleteNotifications = () => {
-    alert("All notifications deleted");
-  };
+  //below is the query to fetch the notifications from the backend
+  const { data: notifications, isLoading } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/notifications", {
+          //actual link to the backend route
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (!res.ok)
+          throw new Error(data.error || "Failed to fetch notifications");
+        return data;
+      } catch (error) {
+        console.log(error);
+        throw new Error(error.message);
+      }
+    },
+  });
+
+  //below is the mutation to delete the notifications from the backend
+  const { mutate: deleteNotifications, isPending } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch("/api/notifications", {
+          //actual link to the backend route
+          method: "DELETE",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error("Failed to delete notifications");
+        return data;
+      } catch (error) {
+        console.log(error);
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      toast.success("Notifications deleted");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
   return (
     <>
@@ -46,7 +71,9 @@ const NotificationPage = () => {
               className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
             >
               <li>
-                <a onClick={deleteNotifications}>Delete all notifications</a>
+                <a onClick={deleteNotifications}>
+                  {isPending ? "Deleting..." : "Delete all notifications"}
+                </a>
               </li>
             </ul>
           </div>
