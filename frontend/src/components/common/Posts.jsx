@@ -3,7 +3,7 @@ import PostSkeleton from "../skeletons/PostSkeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 
-const Posts = ({ feedType }) => {
+const Posts = ({ feedType, username, userId }) => {
   const getPostEndpoint = () => {
     //this function is used to get the post endpoint based on the feed type
     switch (feedType) {
@@ -11,6 +11,10 @@ const Posts = ({ feedType }) => {
         return "/api/posts/all";
       case "following":
         return "/api/posts/following";
+      case "posts":
+        return `/api/posts/user/${username}`;
+      case "likes":
+        return `/api/posts/likes/${userId}`;
       default:
         return "/api/posts/all";
     }
@@ -18,6 +22,7 @@ const Posts = ({ feedType }) => {
 
   const POSTS_ENDPOINT = getPostEndpoint(); //this is the endpoint for the posts
 
+  //below is the query to fetch the posts from the backend
   const {
     data: posts, //using data as posts
     isLoading,
@@ -27,7 +32,7 @@ const Posts = ({ feedType }) => {
     queryKey: ["posts"], //this is the query key for the posts
     queryFn: async () => {
       try {
-        const response = await fetch(POSTS_ENDPOINT);
+        const response = await fetch(POSTS_ENDPOINT); //actual link to the backend route
         const data = await response.json();
         if (!response.ok) {
           throw new Error(data.error || "Failed to fetch posts");
@@ -39,10 +44,10 @@ const Posts = ({ feedType }) => {
     },
   });
 
+  //below is the useEffect to refetch the posts when the feed type changes or when the page is loaded or when the username or userId changes
   useEffect(() => {
-    //this is used to refetch the posts when the feed type changes or when the page is loaded
     refetch();
-  }, [feedType, refetch]);
+  }, [feedType, refetch, username, userId]);
 
   return (
     <>
