@@ -1,25 +1,64 @@
 import Post from "./Post";
 import PostSkeleton from "../skeletons/PostSkeleton";
-import { POSTS } from "../../utils/db/dummy";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 
-const Posts = () => {
-  const isLoading = false;
+const Posts = ({ feedType }) => {
+  const getPostEndpoint = () => {
+    //this function is used to get the post endpoint based on the feed type
+    switch (feedType) {
+      case "forYou":
+        return "/api/posts/all";
+      case "following":
+        return "/api/posts/following";
+      default:
+        return "/api/posts/all";
+    }
+  };
+
+  const POSTS_ENDPOINT = getPostEndpoint(); //this is the endpoint for the posts
+
+  const {
+    data: posts, //using data as posts
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
+    queryKey: ["posts"], //this is the query key for the posts
+    queryFn: async () => {
+      try {
+        const response = await fetch(POSTS_ENDPOINT);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch posts");
+        }
+        return data;
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+  });
+
+  useEffect(() => {
+    //this is used to refetch the posts when the feed type changes or when the page is loaded
+    refetch();
+  }, [feedType, refetch]);
 
   return (
     <>
-      {isLoading && (
+      {(isLoading || isRefetching) && (
         <div className="flex flex-col justify-center">
           <PostSkeleton />
           <PostSkeleton />
           <PostSkeleton />
         </div>
       )}
-      {!isLoading && POSTS?.length === 0 && (
+      {!isLoading && !isRefetching && posts?.length === 0 && (
         <p className="text-center my-4">No posts in this tab. Switch 👻</p>
       )}
-      {!isLoading && POSTS && (
+      {!isLoading && !isRefetching && posts && (
         <div>
-          {POSTS.map((post) => (
+          {posts.map((post) => (
             <Post key={post._id} post={post} />
           ))}
         </div>
