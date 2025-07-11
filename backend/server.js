@@ -1,3 +1,4 @@
+import path from "path";
 import express from "express";
 import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
@@ -19,6 +20,7 @@ cloudinary.config({
 
 const app = express();
 const PORT = process.env.PORT || 3000; //port
+const __dirname = path.resolve(); //to get the current directory
 
 app.use(express.json({ limit: "5mb" })); //to parse the request body, helps to access the request body
 //NOTE: we're using limit to 5mb to prevent the server from crashing due to large file uploads (DoS attacks)
@@ -31,6 +33,14 @@ app.use("/api/auth", authRoutes); //authRoutes
 app.use("/api/users", userRoutes); //userRoutes
 app.use("/api/posts", postRoutes); //postRoutes
 app.use("/api/notifications", notificationRoutes); //notificationRoutes
+
+//below is the code to serve the build folder in production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "/frontend/dist")));
+  app.get("*", (req, res) =>
+    res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"))
+  );
+}
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
