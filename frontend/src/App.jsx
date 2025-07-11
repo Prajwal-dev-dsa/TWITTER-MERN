@@ -18,20 +18,15 @@ function App() {
         //hit the me endpoint in backend
         credentials: "include", //mandatory to send the cookies to the backend
       });
-
       if (res.status === 401) return null; //if the response is not ok, then return null
-
       const data = await res.json(); //get the response from the backend
-
       if (!res.ok) {
         throw new Error(data.error || "Something went wrong"); //if the response is not ok, then throw an error
       }
-
       return data; //return the data from the backend
     },
     retry: false, //don't retry if the query fails
   });
-  console.log("user from query:", user);
 
   if (isLoading) {
     return (

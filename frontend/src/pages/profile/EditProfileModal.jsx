@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import useUpdateUserProfile from "../../hooks/useUpdateUserProfile";
 
-const EditProfileModal = () => {
+const EditProfileModal = ({ authUser }) => {
+
+  //below is the state to store the form data
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
@@ -11,6 +15,23 @@ const EditProfileModal = () => {
     currentPassword: "",
   });
 
+  //below is the function to update the user profile
+  const { updateProfile, isUpdatingProfile } = useUpdateUserProfile();
+
+  //below is the useEffect to set the form data when the auth user is changed
+  useEffect(() => {
+    setFormData({
+      fullName: authUser?.fullName,
+      username: authUser?.username,
+      email: authUser?.email,
+      bio: authUser.bio || "",
+      link: authUser.link || "",
+      newPassword: "",
+      currentPassword: "",
+    });
+  }, [authUser]);
+
+  //below is the function to handle the input change
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -32,7 +53,7 @@ const EditProfileModal = () => {
             className="flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              alert("Profile updated successfully");
+              updateProfile(formData);
             }}
           >
             <div className="flex flex-wrap gap-2">
@@ -96,8 +117,12 @@ const EditProfileModal = () => {
               name="link"
               onChange={handleInputChange}
             />
-            <button className="btn btn-primary rounded-full btn-sm text-white">
-              Update
+            {/* UPDATE PROFILE BUTTON */}
+            <button
+              className="btn btn-primary rounded-full btn-sm text-white"
+              disabled={isUpdatingProfile}
+            >
+              {isUpdatingProfile ? <LoadingSpinner /> : "Update"}
             </button>
           </form>
         </div>

@@ -41,6 +41,7 @@ const Post = ({ post }) => {
   });
 
   const [localLikes, setLocalLikes] = useState(post.likes || []); //we're using this to update the UI without refetching the posts
+
   const isLiked = localLikes.includes(authUser?._id); //we're using this to check if the post is liked by the current user
 
   //below is the mutation function to like/unlike a post, it will hit the backend and like/unlike the post in the database
@@ -99,14 +100,15 @@ const Post = ({ post }) => {
     },
     onSuccess: () => {
       toast.success("Commented on post");
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["posts"] }); //invalidating the posts query to refetch the posts
+      setComment(""); //resetting the comment input
     },
     onError: (error) => {
       toast.error(error.message);
     },
   });
 
-  const postOwner = post.user;
+  const postOwner = post.user; //getting the owner of the post
 
   const isMyPost = authUser?._id === post.user._id; //checking if the current user is the owner of the post
 

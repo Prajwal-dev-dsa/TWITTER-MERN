@@ -60,7 +60,6 @@ const SignUpPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(formData);
     if (
       !formData.email ||
       !formData.username ||

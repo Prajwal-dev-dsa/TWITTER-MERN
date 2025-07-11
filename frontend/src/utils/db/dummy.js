@@ -1,3 +1,4 @@
+//below is the dummy data for the posts
 export const POSTS = [
   {
     _id: "1",
@@ -95,6 +96,7 @@ export const POSTS = [
   },
 ];
 
+//below is the dummy data for the users for the right panel
 export const USERS_FOR_RIGHT_PANEL = [
   {
     _id: "1",

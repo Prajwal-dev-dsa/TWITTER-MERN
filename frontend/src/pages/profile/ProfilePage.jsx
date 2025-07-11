@@ -13,6 +13,9 @@ import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import { useQuery } from "@tanstack/react-query";
 import { formatMemberSinceDate } from "../../utils/date";
+import useFollow from "../../hooks/useFollow";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import useUpdateUserProfile from "../../hooks/useUpdateUserProfile";
 
 const ProfilePage = () => {
   const [coverImg, setCoverImg] = useState(null); //state to store the cover image
@@ -21,8 +24,8 @@ const ProfilePage = () => {
   const { username } = useParams(); //to get the username from the url
   const coverImgRef = useRef(null); //ref to the cover image input
   const profileImgRef = useRef(null); //ref to the profile image input
-
-  const isMyProfile = true; //to check if the current user is the profile owner
+  const { followUnfollowUser, isFollowingUser } = useFollow(); //to follow and unfollow the user
+  const { data: authUser } = useQuery({ queryKey: ["authUser"] }); //to get the authenticated user from the backend
 
   //below is the query to fetch the user profile from the backend
   const {
@@ -35,6 +38,7 @@ const ProfilePage = () => {
     queryFn: async () => {
       try {
         const res = await fetch(`/api/users/profile/${username}`, {
+          //link to the backend route
           //actual link to the backend route
           credentials: "include",
         });
@@ -47,6 +51,11 @@ const ProfilePage = () => {
       }
     },
   });
+
+  //below function is specifically build to handle the profile image and cover image update functionality. We creating it here and can use it anywhere in the app.
+  const { updateProfile, isUpdatingProfile } = useUpdateUserProfile();
+
+  const isMyProfile = user?._id === authUser?._id; //to check if the current user is the profile owner. This is used to show the edit profile button. If the user is the profile owner, then the edit profile button will be shown. If the user is not the profile owner, then the follow Unfollow button will be shown.
 
   const memberSinceDate = formatMemberSinceDate(user?.createdAt); //formatting the member since date
 
@@ -142,21 +151,34 @@ const ProfilePage = () => {
                 </div>
               </div>
               <div className="flex justify-end px-4 mt-5">
-                {isMyProfile && <EditProfileModal />}
+                {isMyProfile && <EditProfileModal authUser={authUser} />}
                 {!isMyProfile && (
                   <button
                     className="btn btn-outline rounded-full btn-sm"
-                    onClick={() => alert("Followed successfully")}
+                    onClick={() => followUnfollowUser(user?._id)} //to follow the user
                   >
-                    Follow
+                    {/* if the user is following the user, then show the unfollow button, otherwise show the follow button */}
+                    {isFollowingUser ? (
+                      <LoadingSpinner />
+                    ) : authUser?.following.includes(user?._id) ? (
+                      "Unfollow"
+                    ) : (
+                      "Follow"
+                    )}
                   </button>
                 )}
+                {/* UPDATE PROFILE IMAGE AND COVER IMAGE */}
                 {(coverImg || profileImg) && (
                   <button
                     className="btn btn-primary rounded-full btn-sm text-white px-4 ml-2"
-                    onClick={() => alert("Profile updated successfully")}
+                    onClick={async () => {
+                      await updateProfile({ coverImg, profileImg });
+                      //reset the cover image and profile image so that the update button is not shown again
+                      setCoverImg(null);
+                      setProfileImg(null);
+                    }}
                   >
-                    Update
+                    {isUpdatingProfile ? <LoadingSpinner /> : "Update"}
                   </button>
                 )}
               </div>
@@ -167,7 +189,7 @@ const ProfilePage = () => {
                   <span className="text-sm text-slate-500">
                     @{user?.username}
                   </span>
-                  <span className="text-sm my-1">{user?.bio}</span>
+                  <span className="text-sm my-1">{user.bio || ""}</span>
                 </div>
 
                 <div className="flex gap-2 flex-wrap">
@@ -176,7 +198,7 @@ const ProfilePage = () => {
                       <>
                         <FaLink className="w-3 h-3 text-slate-500" />
                         <a
-                          href={user?.link}
+                          href={`https://${user?.link}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-sm text-blue-500 hover:underline"

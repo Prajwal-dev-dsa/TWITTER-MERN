@@ -175,8 +175,8 @@ export const updateUserProfile = async (req, res) => {
     user.username = username || user.username;
     user.fullName = fullName || user.fullName;
     user.email = email || user.email;
-    user.bio = bio || user.bio;
-    user.link = link || user.link;
+    user.bio = bio || "";
+    user.link = link || "";
     user.profileImg = profileImg || user.profileImg;
     user.coverImg = coverImg || user.coverImg;
 

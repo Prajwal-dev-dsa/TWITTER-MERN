@@ -55,7 +55,6 @@ const LoginPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(formData);
     login(formData); //call the login function with the form data
   };
 

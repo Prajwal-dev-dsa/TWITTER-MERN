@@ -1,3 +1,4 @@
+//below function is used to format the date of the post
 export const formatPostDate = (createdAt) => {
   const currentDate = new Date();
   const createdAtDate = new Date(createdAt);
@@ -25,6 +26,7 @@ export const formatPostDate = (createdAt) => {
   }
 };
 
+//below function is used to format the date of the member since
 export const formatMemberSinceDate = (createdAt) => {
   const date = new Date(createdAt);
   const months = [
